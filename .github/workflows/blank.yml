@@ -1,0 +1,52 @@
+import subprocess
+import os
+
+VM_NAME = "Windows11-Power"
+DISK = "windows11.qcow2"
+RAM = "16G"
+CPUS = "8"
+ISO = "Win11.iso"
+
+def check(cmd):
+    return subprocess.run(cmd, shell=True).returncode == 0
+
+def create_disk():
+    if not os.path.exists(DISK):
+        subprocess.run(
+            f"qemu-img create -f qcow2 {DISK} 120G",
+            shell=True, check=True
+        )
+
+def start_vm():
+    args = [
+        "qemu-system-x86_64",
+        "-enable-kvm",
+        "-machine", "q35",
+        "-cpu", "host",
+        "-smp", CPUS,
+        "-m", RAM,
+        "-drive", f"file={DISK},if=virtio",
+        "-cdrom", ISO,
+        "-boot", "menu=on",
+        "-device", "virtio-vga",
+        "-netdev", "user,id=n1",
+        "-device", "virtio-net-pci,netdev=n1",
+        "-usb",
+        "-device", "usb-tablet",
+        "-display", "gtk",
+    ]
+    subprocess.run(args, check=True)
+
+def main():
+    if not check("qemu-system-x86_64 --version"):
+        print("Instale o QEMU antes de continuar.")
+        return
+    if not os.path.exists(ISO):
+        print("Coloque o ISO oficial do Windows 11 como Win11.iso.")
+        return
+    create_disk()
+    print(f"Iniciando {VM_NAME}...")
+    start_vm()
+
+if __name__ == "__main__":
+    main()
